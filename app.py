@@ -293,6 +293,15 @@ def delete_timeslot(timeslot_id):
 
 # Các route quản lý lớp học (Class Management) theo kỳ
 @app.route('/classes/<int:class_id>/periods', methods=['GET'])
+def get_classes():
+    # Lấy danh sách tất cả lớp học từ bảng Classes
+    try:
+        classes = Class.query.all()
+        result = [{"ClassID": c.ClassID, "ClassName": c.ClassName} for c in classes]
+        return jsonify(result)
+    except SQLAlchemyError as e:
+        return jsonify({"error": str(e)}), 500
+    
 def get_class_periods(class_id):
     # Lấy danh sách kỳ học của một lớp cụ thể
     try:
@@ -302,6 +311,19 @@ def get_class_periods(class_id):
     except SQLAlchemyError as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route('/classes', methods=['POST'])
+def add_class():
+    # Thêm một lớp học mới vào bảng Classes
+    try:
+        data = request.get_json()
+        new_class = Class(ClassName=data['ClassName'])
+        db.session.add(new_class)
+        db.session.commit()
+        return jsonify({"message": "Class added successfully", "ClassID": new_class.ClassID}), 201
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+    
 @app.route('/classes/<int:class_id>/periods', methods=['POST'])
 def add_class_period(class_id):
     # Thêm một kỳ học mới cho lớp
@@ -315,6 +337,36 @@ def add_class_period(class_id):
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
 
+@app.route('/classes/<int:class_id>/periods/<int:per_id>', methods=['PUT'])
+def update_class_period(class_id, per_id):
+    # Cập nhật thông tin kỳ học của lớp
+    try:
+        data = request.get_json()
+        period = ClassPeriod.query.get(per_id)
+        if not period or period.ClassID != class_id:
+            return jsonify({"error": "Period not found"}), 404
+        period.Period = data.get('Period', period.Period)
+        period.Homeroom_TeacherID = data.get('Homeroom_TeacherID', period.Homeroom_TeacherID)
+        db.session.commit()
+        return jsonify({"message": "Period updated successfully"}), 200
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+    
+@app.route('/classes/<int:class_id>/students', methods=['GET'])
+def get_class_students(class_id):
+    # Lấy danh sách học sinh trong một lớp theo kỳ học cụ thể (yêu cầu Class_perID)
+    try:
+        per_id = request.args.get('per_id')  # Lấy kỳ học từ query parameter
+        if per_id:
+            students = Student.query.join(StudentsClasses).filter(StudentsClasses.ClassID == class_id, StudentsClasses.Class_perID == per_id).all()
+        else:
+            students = Student.query.join(StudentsClasses).filter(StudentsClasses.ClassID == class_id).all()
+        result = [{"StudentID": s.StudentID, "StudentName": s.StudentName, "Email": s.Email} for s in students]
+        return jsonify(result)
+    except SQLAlchemyError as e:
+        return jsonify({"error": str(e)}), 500
+    
 # Các route quản lý điểm (Grade Management) theo kỳ
 @app.route('/grades', methods=['POST'])
 def add_grade():
@@ -335,6 +387,50 @@ def add_grade():
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
     
+@app.route('/grades/<int:grade_id>', methods=['PUT'])
+def update_grade(grade_id):
+    # Cập nhật điểm của một học sinh theo kỳ
+    try:
+        data = request.get_json()
+        grade = Grade.query.get(grade_id)
+        if not grade:
+            return jsonify({"error": "Grade not found"}), 404
+        grade.Score = data.get('Score', grade.Score)
+        grade.Weight = data.get('Weight', grade.Weight)
+        db.session.commit()
+        return jsonify({"message": "Grade updated successfully"}), 200
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/grades/<int:grade_id>', methods=['DELETE'])
+def delete_grade(grade_id):
+    # Xóa một bản ghi điểm theo kỳ
+    try:
+        grade = Grade.query.get(grade_id)
+        if not grade:
+            return jsonify({"error": "Grade not found"}), 404
+        db.session.delete(grade)
+        db.session.commit()
+        return jsonify({"message": "Grade deleted successfully"}), 200
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/students/<int:student_id>/grades', methods=['GET'])
+def get_student_grades(student_id):
+    # Lấy danh sách điểm của một học sinh theo kỳ học
+    try:
+        per_id = request.args.get('per_id')  # Lấy kỳ học từ query parameter
+        if per_id:
+            grades = Grade.query.filter_by(StudentID=student_id, Class_perID=per_id).all()
+        else:
+            grades = Grade.query.filter_by(StudentID=student_id).all()
+        result = [{"GradeID": g.GradeID, "SubjectID": g.SubjectID, "Class_perID": g.Class_perID, "Score": g.Score, "Weight": g.Weight} for g in grades]
+        return jsonify(result)
+    except SQLAlchemyError as e:
+        return jsonify({"error": str(e)}), 500
+
 @app.route('/students/<int:student_id>/average-score', methods=['GET'])
 def get_average_score(student_id):
     #Tính điểm trung bình của các học sinh theo kì học
@@ -377,6 +473,7 @@ def get_class_schedules(class_id):
         return jsonify(result)
     except SQLAlchemyError as e:
         return jsonify({"error": str(e)}), 500
+
 
 # Chạy ứng dụng Flask
 if __name__ == '__main__':
