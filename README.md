@@ -6,7 +6,7 @@ Code gồm 3 phần: Data input ( sử dụng SQLALchemy); model cho các table 
 
 Trạng thái: Done
 
-Sử dụng SQLAIchemy để inout data tuef SQL sang pyhon.
+Sử dụng SQLAIchemy để input data từ SQL sang pyhon.
 
 **Model**
 
@@ -24,4 +24,4 @@ Gồm các phần(draft)
 2. Student Management( Thêm, xóa học sinh; cập nhật thông tin học sinh)
 3. Money Management( Lấy danh sách thông tin tiền của tất cả học sinh; học phí dã đóng và còn nợ của học sinh)
 4. Grade management( Thêm điểm mới cho học sinh theo kỳ học; tính điểm trug bình của học sinh theo kỳ học)
-5. Teacher management ( Lịch dạy của giáo viên, danh sách lớp phụ trách giảng dạy, lương)
+5. Teacher management ( Lịch dạy của giáo viên, danh sách lớp phụ trách giảng dạy, lương?)
