@@ -1,6 +1,6 @@
 # DBMS_school_management
 
-Code gồm 3 phần: Data input ( sử dụng SQLALchemy); model cho các table trong ERD, tạo route chức các function quản lý ( sử dụng flask)
+Code gồm 3 phần: Data input ( sử dụng SQLALchemy); model cho các table trong ERD, tạo route cho các function quản lý ( sử dụng flask)
 
 **Data input**
 
