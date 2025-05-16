@@ -16,7 +16,7 @@ MYSQL_CONFIG = {
 
 # Cấu hình sao lưu
 BACKUP_DIR = r'D:\Backup_database'  # Thư mục trên ổ cứng máy
-#ONEDRIVE_DIR = r'C:\Users\YourUsername\OneDrive\Backups'  # Thư mục OneDrive, thay YourUsername
+#ONEDRIVE_DIR = r'C:\Users\YourUsername\OneDrive\Backups'  # Thư mục OneDrive
 DB_NAME = 'school_management1'
 RETENTION_DAYS = 7  # Giữ file sao lưu 7 ngày
 CHECK_INTERVAL = 5  # Kiểm tra backup_trigger mỗi 5 giây
