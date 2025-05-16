@@ -15,6 +15,10 @@ Conect Python với database
 
 Hàm các chức năng cho quản lý trường học
 
+**Management_func**
+
+Bản sửa chữa Class theo yêu cầu của Trang
+
 **Backup-school_management**
 
 Code python tự động bạo file backup lưu về máy khi có thay đổi trong data
