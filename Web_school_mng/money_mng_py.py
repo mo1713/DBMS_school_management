@@ -1,50 +1,103 @@
-import pymysql
+from sqlalchemy import create_engine, MetaData, text
+from sqlalchemy.orm import sessionmaker
 import pandas as pd
 import os
 import tempfile
+from dotenv import load_dotenv
 
-def get_connection():
-    return pymysql.connect(
-        host='localhost',
-        user='root',
-        password='11230571',
-        database='school_management1'
-    )
+# Load environment variables from .env file
+load_dotenv()
+
+# Retrieve database credentials from environment variables
+DB_USER = os.getenv("DB_USER")
+DB_PASS = os.getenv("DB_PASS")
+DB_HOST = os.getenv("DB_HOST")
+DB_NAME = os.getenv("DB_NAME")
+
+# Validate environment variables
+if not all([DB_USER, DB_PASS, DB_HOST, DB_NAME]):
+    raise ValueError("Missing one or more database environment variables")
+
+# Create SQLAlchemy engine and session
+engine = create_engine(f"mysql+mysqlconnector://{DB_USER}:{DB_PASS}@{DB_HOST}/{DB_NAME}")
+metadata = MetaData()
+Session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+session = Session()
 
 class MoneyManager:
     def get_fee_summary_by_period() -> pd.DataFrame:
-        conn = get_connection()
-        df = pd.read_sql("CALL sp_fee_summary_by_period()", conn)
-        conn.close()
-        return df
+        try:
+            result = session.execute(text("CALL sp_fee_summary_by_period()"))
+            df = pd.DataFrame(result.mappings().all())
+            session.commit()
+            return df
+        except Exception as e:
+            session.rollback()
+            print(f"Error executing sp_fee_summary_by_period: {e}")
+            return pd.DataFrame()
+        finally:
+            result.close()
 
     def get_fee_summary_by_student() -> pd.DataFrame:
-        conn = get_connection()
-        df = pd.read_sql("CALL sp_fee_summary_by_student()", conn)
-        conn.close()
-        return df
+        try:
+            result = session.execute(text("CALL sp_fee_summary_by_student()"))
+            df = pd.DataFrame(result.mappings().all())
+            session.commit()
+            return df
+        except Exception as e:
+            session.rollback()
+            print(f"Error executing sp_fee_summary_by_student: {e}")
+            return pd.DataFrame()
+        finally:
+            result.close()
 
     def get_fee_detail_by_student(student_id: int) -> pd.DataFrame:
-        conn = get_connection()
-        query = f"CALL sp_fee_detail_by_student({student_id})"
-        df = pd.read_sql(query, conn)
-        conn.close()
-        return df
+        try:
+            result = session.execute(
+                text("CALL sp_fee_detail_by_student(:student_id)"),
+                {"student_id": student_id}
+            )
+            df = pd.DataFrame(result.mappings().all())
+            session.commit()
+            return df
+        except Exception as e:
+            session.rollback()
+            print(f"Error executing sp_fee_detail_by_student: {e}")
+            return pd.DataFrame()
+        finally:
+            result.close()
 
-
-    def get_fee_by_class_term_year(term: int, year: int) -> pd.DataFrame:
-        conn = get_connection()
-        query = f"CALL sp_fee_by_class_term_year({term}, {year})"
-        df = pd.read_sql(query, conn)
-        conn.close()
-        return df
+    def get_fee_by_class_term_year(self, term: int, year: int) -> pd.DataFrame:
+        try:
+            result = session.execute(
+                text("CALL sp_fee_by_class_term_year(:term, :year)"),
+                {"term": term, "year": year}
+            )
+            df = pd.DataFrame(result.mappings().all())
+            session.commit()
+            return df
+        except Exception as e:
+            session.rollback()
+            print(f"Error executing sp_fee_by_class_term_year: {e}")
+            return pd.DataFrame()
+        finally:
+            result.close()
 
     def get_fee_total_by_class(term: int, year: int) -> pd.DataFrame:
-        conn = get_connection()
-        query = f"CALL sp_fee_total_by_class({term}, {year})"
-        df = pd.read_sql(query, conn)
-        conn.close()
-        return df
+        try:
+            result = session.execute(
+                text("CALL sp_fee_total_by_class(:term, :year)"),
+                {"term": term, "year": year}
+            )
+            df = pd.DataFrame(result.mappings().all())
+            session.commit()
+            return df
+        except Exception as e:
+            session.rollback()
+            print(f"Error executing sp_fee_total_by_class: {e}")
+            return pd.DataFrame()
+        finally:
+            result.close()
 
     def export_by_class_to_excel(df: pd.DataFrame, filename="money_by_class.xlsx"):
         try:
