@@ -8,8 +8,8 @@ from pathlib import Path
 
 # Cấu hình MySQL
 MYSQL_CONFIG = {
-    'user': 'root',  # Thay bằng username MySQL
-    'password': '11230571',  # Thay bằng password MySQL
+    'user': 'root', 
+    'password': '11230571',  
     'host': 'localhost',
     'database': 'school_management1'
 }
