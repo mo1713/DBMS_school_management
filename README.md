@@ -1,6 +1,6 @@
 # DBMS_school_management
 
-** School_management**
+**School_management**
 
 Code trong SQL
 
