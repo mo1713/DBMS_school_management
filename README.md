@@ -2,15 +2,12 @@
 
 **School_management**
 
-Code trong SQL
+Code trong SQL:
 
-Database
-
-Procedure
-
-Trigger
-
-Activity log
+1. Database
+2. Procedure
+3. Trigger
+4. Activity log
 
 **Web_school_mng**
 
