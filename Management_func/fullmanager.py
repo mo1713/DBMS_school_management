@@ -6,12 +6,43 @@ import tempfile
 from db import Connect
 
 class Manager:
+    @staticmethod
+    def connect_db():
+        try:
+            connection = mysql.connector.connect(
+                host=os.getenv("DB_HOST"),
+                user=os.getenv("DB_USER"),
+                password=os.getenv("DB_PASS"),
+                database=os.getenv("DB_NAME")
+            )
+            if connection.is_connected():
+                print("Connected to MySQL database")
+                return connection
+        except Error as e:
+            print(f"Error connecting to MySQL: {e}")
+            return None
+
+    @staticmethod
+    def fetch_data(query):
+        connection = connect_db()
+        if connection:
+            try:
+                # Sử dụng pandas để đọc dữ liệu từ truy vấn SQL
+                df = pd.read_sql(query, connection)
+                return df
+            except Error as e:
+                print(f"Error executing query: {e}")
+                return None
+            finally:
+                connection.close()
+                print("MySQL connection closed")
+        return None
 #Class    
 # Add a new class
     @staticmethod
     def add_class(class_name, note):
         try:
-            conn = Connect.connect_db()
+            conn = connect_db()
             cursor = conn.cursor()
             cursor.callproc('AddClass', [class_name, note])
             for result in cursor.stored_results():
@@ -29,7 +60,7 @@ class Manager:
     @staticmethod
     def update_class(class_id, class_name, note):
         try:
-            conn = Connect.connect_db()
+            conn = connect_db()
             cursor = conn.cursor()
             cursor.callproc('UpdateClass', [class_id, class_name, note])
             for result in cursor.stored_results():
@@ -47,7 +78,7 @@ class Manager:
     @staticmethod
     def delete_class(class_id):
         try:
-            conn = Connect.connect_db()
+            conn = connect_db()
             cursor = conn.cursor()
             cursor.callproc('DeleteClass', [class_id])
             for result in cursor.stored_results():
@@ -73,7 +104,7 @@ class Manager:
         Returns:
             pandas.DataFrame: DataFrame containing class details.
         """
-        conn = Connect.connect_db()
+        conn = connect_db()
         if not conn:
             return pd.DataFrame()
         
@@ -106,7 +137,7 @@ class Manager:
             pandas.DataFrame: DataFrame containing matching class details (ClassID, ClassName, Notes, 
                             HomeroomTeacher, Term, Year, StudentCount).
         """
-        conn = Connect.connect_db()
+        conn = connect_db()
         if not conn:
             return pd.DataFrame()
         
@@ -137,7 +168,7 @@ class Manager:
         Returns:
             pandas.DataFrame: DataFrame containing student details (StudentID, StudentName, Address, BirthDate, Email).
         """
-        conn = Connect.connect_db()
+        conn = connect_db()
         if not conn:
             return pd.DataFrame()
         
@@ -169,7 +200,7 @@ class Manager:
         - pandas.DataFrame: DataFrame chứa lịch học với các cột ClassName, TeacherName, SubjectName, 
                             DayOfWeek, StartTime, EndTime, WeekNumber.
         """
-        conn = Connect.connect_db()
+        conn = connect_db()
         if not conn:
             return pd.DataFrame()
         
@@ -218,7 +249,7 @@ class Manager:
 #Student         
     @staticmethod
     def add_student_with_class(name, address, birthdate, email, note, class_per_id):
-        conn = Connect.connect_db()
+        conn = connect_db()
         if not conn:
             return pd.DataFrame()
         try:
@@ -237,7 +268,7 @@ class Manager:
 
     @staticmethod
     def delete_student(student_id):
-        conn = Connect.connect_db()
+        conn = connect_db()
         if not conn:
             return pd.DataFrame()
         try:
@@ -256,7 +287,7 @@ class Manager:
 
     @staticmethod
     def update_student(student_id, name, address, birthdate, email, note):
-        conn = Connect.connect_db()
+        conn = connect_db()
         if not conn:
             return pd.DataFrame()
         try:
@@ -275,7 +306,7 @@ class Manager:
 
     @staticmethod
     def find_student_detail(student_id=None, student_name=None):
-        conn = Connect.connect_db()
+        conn = connect_db()
         if not conn:
             return pd.DataFrame()
         try:
@@ -293,7 +324,7 @@ class Manager:
 
     @staticmethod
     def find_students_by_note(note_keyword=None):
-        conn = Connect.connect_db()
+        conn = connect_db()
         if not conn:
             return pd.DataFrame()
 
@@ -313,7 +344,7 @@ class Manager:
 #Teacher
     @staticmethod
     def add_teacher(name, subject_id, email):
-        conn = Connect.connect_db()
+        conn = connect_db()
         if not conn:
             return pd.DataFrame()
         
@@ -333,7 +364,7 @@ class Manager:
 
     @staticmethod
     def update_teacher(teacher_id, name, subject_id, email):
-        conn = Connect.connect_db()
+        conn = connect_db()
         if not conn:
             return pd.DataFrame()
         
@@ -353,7 +384,7 @@ class Manager:
     
     @staticmethod
     def delete_teacher(teacher_id):
-        conn = Connect.connect_db()
+        conn = connect_db()
         if not conn:
             return pd.DataFrame()
         
@@ -373,7 +404,7 @@ class Manager:
 
     @staticmethod
     def find_teacher(teacher_id=None, teacher_name=None):
-        conn = Connect.connect_db()
+        conn = connect_db()
         if not conn:
             return pd.DataFrame()
         
@@ -391,7 +422,7 @@ class Manager:
             conn.close()
     @staticmethod
     def get_all_teachers():
-        conn = Connect.connect_db()
+        conn = connect_db()
         if not conn:
             return pd.DataFrame()
         
@@ -413,7 +444,7 @@ class Manager:
 
     @staticmethod
     def get_teacher_schedule(teacher_id, term, year):
-        conn = Connect.connect_db()
+        conn = connect_db()
         if not conn:
             return pd.DataFrame()
         
@@ -435,7 +466,7 @@ class Manager:
 #Class
     @staticmethod
     def get_fee_summary_by_period() -> pd.DataFrame:
-        conn = Connect.connect_db()
+        conn = connect_db()
         if not conn:
             return pd.DataFrame()
         try:
@@ -453,7 +484,7 @@ class Manager:
 
     @staticmethod
     def get_fee_summary_by_student() -> pd.DataFrame:
-        conn = Connect.connect_db()
+        conn = connect_db()
         if not conn:
             return pd.DataFrame()
         try:
@@ -471,7 +502,7 @@ class Manager:
 
     @staticmethod
     def get_fee_detail_by_student(student_id: int) -> pd.DataFrame:
-        conn = Connect.connect_db()
+        conn = connect_db()
         if not conn:
             return pd.DataFrame()
         try:
@@ -489,7 +520,7 @@ class Manager:
 
     @staticmethod
     def get_fee_by_class_term_year(term: int, year: int) -> pd.DataFrame:
-        conn = Connect.connect_db()
+        conn = connect_db()
         if not conn:
             return pd.DataFrame()
         try:
@@ -507,7 +538,7 @@ class Manager:
 
     @staticmethod
     def get_fee_total_by_class(term: int, year: int) -> pd.DataFrame:
-        conn = Connect.connect_db()
+        conn = connect_db()
         if not conn:
             return pd.DataFrame()
         try:
