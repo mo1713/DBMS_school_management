@@ -443,7 +443,7 @@ class Manager:
             cursor.callproc('sp_fee_summary_by_period')
             for result in cursor.stored_results():
                 data = result.fetchall()
-            return pd.DataFrame(data)
+            return float(data["TotalDebt"].iloc[0]), float(data["TotalPaid"].iloc[0]), float(data["TotalValue"].iloc[0])
         except Exception as e:
             print(f"Error in get_fee_summary_by_period: {e}")
             return pd.DataFrame()
