@@ -3,7 +3,7 @@ USE school_management1;
 
 -- Tổng thu và tổng nợ theo từng kỳ học
 DELIMITER $$
-CREATE PROCEDURE sp_fee_summary_by_period()
+CREATE PROCEDURE sp_fee_summary_by_period(IN p_term INT,  IN p_year INT)
 BEGIN
     SELECT 
         ap.Term,
@@ -13,8 +13,9 @@ BEGIN
         SUM(m.Debt) AS TotalDebt
     FROM Money m
     JOIN Academic_period ap ON m.PerID = ap.PerId
-    GROUP BY ap.Term, ap.Year
-    ORDER BY ap.Year, ap.Term;
+    WHERE ap.Term = p_Term
+      AND ap.Year = p_Year
+
 END$$
 DELIMITER ;
 
