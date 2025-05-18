@@ -1,81 +1,67 @@
-from sqlalchemy import create_engine, MetaData, text
-from sqlalchemy.orm import sessionmaker
+import mysql.connector
+from mysql.connector import Error
 import pandas as pd
 import os
 import tempfile
-from dotenv import load_dotenv
+from db import Connect
 
-# Load environment variables from .env file
-load_dotenv()
-
-# Retrieve database credentials from environment variables
-DB_USER = os.getenv("DB_USER")
-DB_PASS = os.getenv("DB_PASS")
-DB_HOST = os.getenv("DB_HOST")
-DB_NAME = os.getenv("DB_NAME")
-
-# Validate environment variables
-if not all([DB_USER, DB_PASS, DB_HOST, DB_NAME]):
-    raise ValueError("Missing one or more database environment variables")
-
-# Create SQLAlchemy engine and session
-engine = create_engine(f"mysql+mysqlconnector://{DB_USER}:{DB_PASS}@{DB_HOST}/{DB_NAME}")
-metadata = MetaData()
-Session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-session = Session()
 
 class ClassManager:
     # Add a new class
+    @staticmethod
     def add_class(class_name, note):
         try:
-            result = session.execute(
-                text("CALL AddClass(:class_name, :note)"),
-                {"class_name": class_name, "note": note}
-            )
-            new_id = result.mappings().first()['new_id']
-            session.commit()
+            conn = Connect.connect_db()
+            cursor = conn.cursor()
+            cursor.callproc('AddClass', [class_name, note])
+            for result in cursor.stored_results():
+                new_id = result.fetchone()[0]
+            conn.commit()
             return new_id
-        except Exception as e:
-            session.rollback()
+        except Error as e:
             print(f"Error: {e}")
             return None
         finally:
-            result.close()
+            cursor.close()
+            conn.close()
 
     # Update a class
+    @staticmethod
     def update_class(class_id, class_name, note):
         try:
-            result = session.execute(
-                text("CALL UpdateClass(:class_id, :class_name, :note)"),
-                {"class_id": class_id, "class_name": class_name, "note": note}
-            )
-            affected_rows = result.mappings().first()['affected_rows']
-            session.commit()
+            conn = Connect.connect_db()
+            cursor = conn.cursor()
+            cursor.callproc('UpdateClass', [class_id, class_name, note])
+            for result in cursor.stored_results():
+                affected_rows = result.fetchone()[0]
+            conn.commit()
             return affected_rows
-        except Exception as e:
-            session.rollback()
+        except Error as e:
             print(f"Error: {e}")
             return 0
         finally:
-            result.close()
+            cursor.close()
+            conn.close()
 
     # Delete a class
+    @staticmethod
     def delete_class(class_id):
         try:
-            result = session.execute(
-                text("CALL DeleteClass(:class_id)"),
-                {"class_id": class_id}
-            )
-            affected_rows = result.mappings().first()['affected_rows']
-            session.commit()
+            conn = Connect.connect_db()
+            cursor = conn.cursor()
+            cursor.callproc('DeleteClass', [class_id])
+            for result in cursor.stored_results():
+                affected_rows = result.fetchone()[0]
+            conn.commit()
             return affected_rows
-        except Exception as e:
-            session.rollback()
+        except Error as e:
             print(f"Error: {e}")
             return 0
         finally:
-            result.close()
+            cursor.close()
+            conn.close()
 
+    @staticmethod
     def get_class_list(search_name=None, limit=10):
         """
         Retrieve a list of classes with homeroom teacher, academic period, student count, and notes.
@@ -87,22 +73,27 @@ class ClassManager:
         Returns:
             pandas.DataFrame: DataFrame containing class details.
         """
+        conn = Connect.connect_db()
+        if not conn:
+            return pd.DataFrame()
+        
         try:
-            result = session.execute(
-                text("CALL GetClassList(:search_name, :limit)"),
-                {"search_name": search_name, "limit": limit}
-            )
-            classes = result.mappings().all()
+            cursor = conn.cursor(dictionary=True)
+            cursor.callproc('GetClassList', [search_name, limit])
+            classes = []
+            for result in cursor.stored_results():
+                classes = result.fetchall()
+            # Convert list of dictionaries to DataFrame
             df = pd.DataFrame(classes)
-            session.commit()
             return df
-        except Exception as e:
-            session.rollback()
+        except Error as e:
             print(f"Error executing GetClassList: {e}")
             return pd.DataFrame()
         finally:
-            result.close()
+            cursor.close()
+            conn.close()
 
+    @staticmethod
     def find_class(class_id=None, class_name=None):
         """
         Find classes by ClassID or ClassName.
@@ -115,22 +106,27 @@ class ClassManager:
             pandas.DataFrame: DataFrame containing matching class details (ClassID, ClassName, Notes, 
                             HomeroomTeacher, Term, Year, StudentCount).
         """
+        conn = Connect.connect_db()
+        if not conn:
+            return pd.DataFrame()
+        
         try:
-            result = session.execute(
-                text("CALL FindClass(:class_id, :class_name)"),
-                {"class_id": class_id, "class_name": class_name}
-            )
-            classes = result.mappings().all()
+            cursor = conn.cursor(dictionary=True)
+            # Ensure class_id is None if not provided or invalid
+            class_id = class_id if class_id is not None else None
+            cursor.callproc('FindClass', [class_id, class_name])
+            classes = []
+            for result in cursor.stored_results():
+                classes = result.fetchall()
             df = pd.DataFrame(classes)
-            session.commit()
             return df
-        except Exception as e:
-            session.rollback()
+        except Error as e:
             print(f"Error executing FindClass: {e}")
             return pd.DataFrame()
         finally:
-            result.close()
-
+            cursor.close()
+            conn.close()
+    @staticmethod
     def get_class_students(class_id=None, class_name=None):
         """
         Retrieve a list of students for a specific class.
@@ -141,22 +137,26 @@ class ClassManager:
         Returns:
             pandas.DataFrame: DataFrame containing student details (StudentID, StudentName, Address, BirthDate, Email).
         """
+        conn = Connect.connect_db()
+        if not conn:
+            return pd.DataFrame()
+        
         try:
-            result = session.execute(
-                text("CALL GetClassStudents(:class_id, :class_name)"),
-                {"class_id": class_id, "class_name": class_name}
-            )
-            students = result.mappings().all()
+            cursor = conn.cursor(dictionary=True)
+            cursor.callproc('GetClassStudents', [class_id, class_name])
+            students = []
+            for result in cursor.stored_results():
+                students = result.fetchall()
             df = pd.DataFrame(students)
-            session.commit()
             return df
-        except Exception as e:
-            session.rollback()
+        except Error as e:
             print(f"Error executing GetClassStudents: {e}")
             return pd.DataFrame()
         finally:
-            result.close()
+            cursor.close()
+            conn.close()
 
+    @staticmethod
     def get_class_schedule(class_id, per_id):
         """
         Lấy lịch học của một lớp dựa trên ClassID và PerId bằng stored procedure GetClassSchedule.
@@ -169,29 +169,33 @@ class ClassManager:
         - pandas.DataFrame: DataFrame chứa lịch học với các cột ClassName, TeacherName, SubjectName, 
                             DayOfWeek, StartTime, EndTime, WeekNumber.
         """
+        conn = Connect.connect_db()
+        if not conn:
+            return pd.DataFrame()
+        
         try:
-            result = session.execute(
-                text("CALL GetClassSchedule(:class_id, :per_id)"),
-                {"class_id": class_id, "per_id": per_id}
-            )
-            schedules = result.mappings().all()
+            cursor = conn.cursor(dictionary=True)
+            cursor.callproc('GetClassSchedule', [class_id, per_id])
+            schedules = []
+            for result in cursor.stored_results():
+                schedules = result.fetchall()
+            # Convert list of dictionaries to DataFrame
             df = pd.DataFrame(schedules)
-            session.commit()
             return df
-        except Exception as e:
-            session.rollback()
+        except Error as e:
             print(f"Error executing GetClassSchedule: {e}")
             return pd.DataFrame()
         finally:
-            result.close()
-
-    def export_to_excel(df, filename="classes_export.xlsx"):
+            cursor.close()
+            conn.close()
+    @staticmethod
+    def export_to_excel(df, filename="manager_export.xlsx"):
         """
         Export a DataFrame to an Excel file.
         
         Args:
             df (pandas.DataFrame): DataFrame to export.
-            filename (str): Name of the output Excel file (default: 'classes_export.xlsx').
+            filename (str): Name of the output Excel file (default: 'manager_export.xlsx').
         
         Returns:
             str: Path to the generated Excel file, or None if failed.
@@ -210,6 +214,3 @@ class ClassManager:
         except Exception as e:
             print(f"Error exporting to Excel: {e}")
             return None
-
-
-
